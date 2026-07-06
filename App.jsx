@@ -1,27 +1,102 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 
-// ─── Data ───────────────────────────────────────────────────────────────────
+// ─── Real Provider Data (community-verified) ─────────────────────────────────
 
 const PROVIDERS = [
-  { id:1, name:"Riverside Family Medicine", type:"Primary Care", address:"412 Oak Street", city:"Austin", state:"TX", zip:"78701", phone:"(512) 555-0142", rating:4.8, reviews:34, champvaExperience:"Expert", acceptingNew:true, telehealth:true, languages:["English","Spanish"], notes:"Dedicated CHAMPVA coordinator on staff. Handles all billing in-house.", specialties:["Family Medicine","Preventive Care"], lat:30.2672, lng:-97.7431 },
-  { id:2, name:"Lone Star Orthopedics", type:"Specialist", address:"890 Congress Ave", city:"Austin", state:"TX", zip:"78701", phone:"(512) 555-0198", rating:4.5, reviews:19, champvaExperience:"Familiar", acceptingNew:true, telehealth:false, languages:["English"], notes:"Staff familiar with CHAMPVA but may require prior auth documentation.", specialties:["Orthopedics","Sports Medicine"], lat:30.2620, lng:-97.7382 },
-  { id:3, name:"HealthBridge Pediatrics", type:"Pediatrics", address:"55 Barton Springs Rd", city:"Austin", state:"TX", zip:"78704", phone:"(512) 555-0231", rating:4.9, reviews:61, champvaExperience:"Expert", acceptingNew:true, telehealth:true, languages:["English","Spanish","Vietnamese"], notes:"Highly recommended by veteran families. Zero billing surprises reported.", specialties:["Pediatrics","Adolescent Medicine"], lat:30.2614, lng:-97.7630 },
-  { id:4, name:"Gateway Internal Medicine", type:"Primary Care", address:"2201 W Pecos Rd", city:"Phoenix", state:"AZ", zip:"85029", phone:"(602) 555-0177", rating:4.2, reviews:27, champvaExperience:"Familiar", acceptingNew:false, telehealth:true, languages:["English","Spanish"], notes:"Currently not accepting new CHAMPVA patients but telehealth available.", specialties:["Internal Medicine","Geriatrics"], lat:33.5922, lng:-112.1263 },
-  { id:5, name:"Desert Sun Mental Health", type:"Mental Health", address:"7800 N 19th Ave", city:"Phoenix", state:"AZ", zip:"85021", phone:"(602) 555-0109", rating:4.7, reviews:42, champvaExperience:"Expert", acceptingNew:true, telehealth:true, languages:["English","Spanish","Arabic"], notes:"Specializes in veteran family trauma and PTSD support for spouses and dependents.", specialties:["Psychiatry","Counseling","PTSD"], lat:33.5309, lng:-112.0940 },
-  { id:6, name:"Cascade Dermatology Group", type:"Specialist", address:"1401 NE Broadway", city:"Portland", state:"OR", zip:"97232", phone:"(503) 555-0163", rating:3.9, reviews:11, champvaExperience:"Learning", acceptingNew:true, telehealth:false, languages:["English"], notes:"New to CHAMPVA billing. Recommend calling ahead to confirm coverage details.", specialties:["Dermatology"], lat:45.5270, lng:-122.6447 },
-  { id:7, name:"Pacific Northwest OB/GYN", type:"OB/GYN", address:"3710 SW US Veterans Hosp Rd", city:"Portland", state:"OR", zip:"97239", phone:"(503) 555-0287", rating:4.6, reviews:38, champvaExperience:"Expert", acceptingNew:true, telehealth:true, languages:["English","Mandarin"], notes:"Veteran-owned practice. Deep familiarity with CHAMPVA maternity benefits.", specialties:["Obstetrics","Gynecology","Maternal-Fetal"], lat:45.4997, lng:-122.6863 },
-  { id:8, name:"Mile High Cardiology", type:"Specialist", address:"1601 E 19th Ave", city:"Denver", state:"CO", zip:"80218", phone:"(720) 555-0144", rating:4.4, reviews:23, champvaExperience:"Familiar", acceptingNew:true, telehealth:false, languages:["English"], notes:"Strong billing team. Pre-authorization handled proactively.", specialties:["Cardiology","Electrophysiology"], lat:39.7461, lng:-104.9632 },
-  { id:9, name:"Front Range Family Dentistry", type:"Dental", address:"6250 Leetsdale Dr", city:"Denver", state:"CO", zip:"80224", phone:"(720) 555-0222", rating:4.1, reviews:16, champvaExperience:"Familiar", acceptingNew:true, telehealth:false, languages:["English","Spanish"], notes:"CHAMPVA covers limited dental. Staff will walk you through what's covered.", specialties:["General Dentistry","Preventive"], lat:39.7118, lng:-104.9257 },
-  { id:10, name:"Magnolia Women's Health", type:"OB/GYN", address:"6 Medical Center Blvd", city:"Charlotte", state:"NC", zip:"28262", phone:"(704) 555-0191", rating:4.8, reviews:53, champvaExperience:"Expert", acceptingNew:true, telehealth:true, languages:["English","Spanish","French"], notes:"Top-rated by CHAMPVA families in the Carolinas. Handles all paperwork.", specialties:["OB/GYN","Reproductive Health"], lat:35.3091, lng:-80.7478 },
-  { id:11, name:"Triad Behavioral Health", type:"Mental Health", address:"511 N Elam Ave", city:"Greensboro", state:"NC", zip:"27403", phone:"(336) 555-0155", rating:4.5, reviews:29, champvaExperience:"Expert", acceptingNew:true, telehealth:true, languages:["English"], notes:"Offers sliding scale for services not covered. Military family specialists on staff.", specialties:["Therapy","Child Psychology","Family Counseling"], lat:36.0726, lng:-79.8139 },
-  { id:12, name:"Veterans Village Urgent Care", type:"Urgent Care", address:"8920 Tampa Ave", city:"Northridge", state:"CA", zip:"91324", phone:"(818) 555-0103", rating:4.0, reviews:44, champvaExperience:"Familiar", acceptingNew:true, telehealth:false, languages:["English","Spanish","Tagalog"], notes:"Walk-in friendly. Know your CHAMPVA card number, they verify on-site.", specialties:["Urgent Care","Occupational Medicine"], lat:34.2347, lng:-118.5330 },
-  { id:13, name:"Bay Area Neurology Associates", type:"Specialist", address:"2350 Geary Blvd", city:"San Francisco", state:"CA", zip:"94115", phone:"(415) 555-0178", rating:4.3, reviews:18, champvaExperience:"Familiar", acceptingNew:false, telehealth:true, languages:["English","Cantonese","Spanish"], notes:"Waitlist for in-person. Telehealth available for established patients.", specialties:["Neurology","Headache Medicine"], lat:37.7825, lng:-122.4450 },
-  { id:14, name:"Heartland Pediatric Therapy", type:"Pediatrics", address:"4500 W 135th St", city:"Overland Park", state:"KS", zip:"66223", phone:"(913) 555-0266", rating:4.7, reviews:31, champvaExperience:"Expert", acceptingNew:true, telehealth:true, languages:["English","Spanish"], notes:"OT, PT, and speech therapy all CHAMPVA-eligible here. Highly organized billing.", specialties:["Pediatric PT","Occupational Therapy","Speech Therapy"], lat:38.9070, lng:-94.6977 },
-  { id:15, name:"Peachtree Dermatology & Skin", type:"Specialist", address:"1100 Lake Hearn Dr NE", city:"Atlanta", state:"GA", zip:"30342", phone:"(404) 555-0133", rating:4.6, reviews:22, champvaExperience:"Familiar", acceptingNew:true, telehealth:false, languages:["English"], notes:"Accepts CHAMPVA without hassle. Billing team is responsive.", specialties:["Dermatology","Mohs Surgery"], lat:33.8775, lng:-84.3556 },
+  {
+    id:1,
+    name:"Metro Mayaguez",
+    type:"Clinic",
+    address:"15 Dr Basora Street",
+    city:"Mayaguez",
+    state:"PR",
+    zip:"00680",
+    phone:"(787) 834-0101",
+    rating:5.0,
+    reviews:1,
+    champvaExperience:"Expert",
+    acceptingNew:true,
+    telehealth:true,
+    languages:["English","Spanish"],
+    notes:"Submitted by a CHAMPVA family. Expert-level billing experience reported.",
+    specialties:["Clinic"],
+    verified:false,
+    providerSubmitted:false,
+    lat:18.2013,
+    lng:-67.1397,
+  },
+  {
+    id:2,
+    name:"Jessica Williams, LPC",
+    type:"Mental Health",
+    address:"1000 Chinaberry Dr, Suite 502",
+    city:"Bossier City",
+    state:"LA",
+    zip:"71111",
+    phone:"(318) 519-1915",
+    rating:5.0,
+    reviews:1,
+    champvaExperience:"Expert",
+    acceptingNew:true,
+    telehealth:true,
+    languages:["English"],
+    notes:"Licensed Professional Counselor accepting CHAMPVA. Expert with CHAMPVA billing.",
+    specialties:["Counseling","Mental Health"],
+    verified:false,
+    providerSubmitted:true,
+    lat:32.5160,
+    lng:-93.7321,
+  },
+  {
+    id:3,
+    name:"April T. Kitchens, LPC, LLC",
+    type:"Mental Health",
+    address:"601 N. Belair Square, Suite 2",
+    city:"Evans",
+    state:"GA",
+    zip:"30809",
+    phone:"(706) 250-1203",
+    rating:5.0,
+    reviews:1,
+    champvaExperience:"Learning",
+    acceptingNew:true,
+    telehealth:true,
+    languages:["English"],
+    notes:"Currently building CHAMPVA billing experience. Call ahead to confirm billing process before your first appointment.",
+    specialties:["Counseling","Mental Health"],
+    verified:false,
+    providerSubmitted:false,
+    lat:33.5376,
+    lng:-82.1318,
+  },
+  {
+    id:4,
+    name:"ANEW U Counseling Services / Amanda Richardson, LPC, LCMHC",
+    type:"Mental Health",
+    address:"1057 Dresser Court",
+    city:"Raleigh",
+    state:"NC",
+    zip:"27609",
+    phone:"(984) 212-0028",
+    rating:5.0,
+    reviews:1,
+    champvaExperience:"Expert",
+    acceptingNew:true,
+    telehealth:true,
+    languages:["English"],
+    notes:"Veteran-owned practice. One of our clinicians (Amanda Richardson) is a veteran and prides herself on taking care of her 'family'. Expert CHAMPVA billing experience.",
+    specialties:["Counseling","Mental Health","Veteran Care"],
+    verified:false,
+    providerSubmitted:true,
+    lat:35.8328,
+    lng:-78.6483,
+  },
 ];
 
 const STATES = [...new Set(PROVIDERS.map(p => p.state))].sort();
 const TYPES  = [...new Set(PROVIDERS.map(p => p.type))].sort();
+const ALL_STATES = ["AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","HI","IA","ID","IL","IN","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","PR","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY"];
+const ALL_TYPES  = ["Clinic","Dental","Mental Health","OB/GYN","Pediatrics","Primary Care","Specialist","Urgent Care","Other"];
 
 // ─── CHAMPVA Constants ───────────────────────────────────────────────────────
 const INDIV_DEDUCTIBLE  = 50;
@@ -37,7 +112,6 @@ function haversine(lat1, lng1, lat2, lng2) {
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
 const fmt$ = n => `$${n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -79,8 +153,7 @@ function Pill({ children, active, onClick }) {
   return <button onClick={onClick} style={{
     border:`1.5px solid ${active?C.navy:C.border}`,
     background:active?C.navy:"#fff",color:active?"#fff":C.muted,
-    borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:600,cursor:"pointer",
-    transition:"all .15s"
+    borderRadius:20,padding:"5px 14px",fontSize:12,fontWeight:600,cursor:"pointer",transition:"all .15s"
   }}>{children}</button>;
 }
 
@@ -89,6 +162,13 @@ function Section({ title, children, style={} }) {
     {title && <h3 style={{fontFamily:"'DM Serif Display',serif",fontSize:18,color:C.navy,margin:"0 0 16px",lineHeight:1.2}}>{title}</h3>}
     {children}
   </div>;
+}
+
+// ─── Trust Badge ──────────────────────────────────────────────────────────────
+function TrustBadge({ providerSubmitted, verified }) {
+  if (verified) return <span style={{background:"#dbeafe",color:"#1e40af",borderRadius:20,padding:"2px 9px",fontSize:10,fontWeight:700}}>✓ Verified</span>;
+  if (providerSubmitted) return <span style={{background:"#f3e8ff",color:"#6b21a8",borderRadius:20,padding:"2px 9px",fontSize:10,fontWeight:700}}>Provider-Listed</span>;
+  return <span style={{background:C.yellowBg,color:"#92400e",borderRadius:20,padding:"2px 9px",fontSize:10,fontWeight:700}}>⚠ Unverified — Call Ahead</span>;
 }
 
 // ─── Provider Card ────────────────────────────────────────────────────────────
@@ -104,7 +184,10 @@ function ProviderCard({ p, dist, onSelect }) {
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
       <div>
         <div style={{fontFamily:"'DM Serif Display',serif",fontWeight:700,fontSize:16,color:C.navy,lineHeight:1.25}}>{p.name}</div>
-        <div style={{fontSize:12,color:C.muted,marginTop:2}}>{p.type}</div>
+        <div style={{fontSize:12,color:C.muted,marginTop:2,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+          {p.type}
+          <TrustBadge providerSubmitted={p.providerSubmitted} verified={p.verified}/>
+        </div>
       </div>
       <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
         <Badge level={p.champvaExperience}/>
@@ -115,11 +198,13 @@ function ProviderCard({ p, dist, onSelect }) {
     </div>
     <div style={{display:"flex",alignItems:"center",gap:6}}>
       <Stars r={p.rating}/>
-      <span style={{fontSize:13,fontWeight:700,color:C.navy}}>{p.rating}</span>
-      <span style={{fontSize:12,color:C.muted}}>({p.reviews} reviews)</span>
-      {dist!=null && <span style={{marginLeft:"auto",fontSize:12,color:C.blue,fontWeight:700,background:C.blueBg,borderRadius:12,padding:"2px 8px"}}>📍 {dist<1?`${(dist*5280).toFixed(0)} ft`:dist<10?`${dist.toFixed(1)} mi`:`${Math.round(dist)} mi`}</span>}
+      <span style={{fontSize:13,fontWeight:700,color:C.navy}}>{p.rating.toFixed(1)}</span>
+      <span style={{fontSize:12,color:C.muted}}>({p.reviews} {p.reviews===1?"review":"reviews"})</span>
+      {dist!=null && <span style={{marginLeft:"auto",fontSize:12,color:C.blue,fontWeight:700,background:C.blueBg,borderRadius:12,padding:"2px 8px"}}>
+        📍 {dist<1?`${(dist*5280).toFixed(0)} ft`:dist<10?`${dist.toFixed(1)} mi`:`${Math.round(dist)} mi`}
+      </span>}
     </div>
-    <div style={{fontSize:12,color:C.text}}>📍 {p.address}, {p.city}, {p.state}</div>
+    <div style={{fontSize:12,color:C.text}}>📍 {p.address}, {p.city}, {p.state} {p.zip}</div>
     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
       {p.specialties.map(s=><Tag key={s}>{s}</Tag>)}
       {p.telehealth&&<Tag color="#e0f2fe" textColor="#0369a1">📱 Telehealth</Tag>}
@@ -137,8 +222,11 @@ function Modal({ p, onClose }) {
       <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:16}}>
         <div style={{width:52,height:52,borderRadius:14,background:C.navy,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>🏥</div>
         <div>
-          <div style={{fontFamily:"'DM Serif Display',serif",fontWeight:700,fontSize:21,color:C.navy,lineHeight:1.2}}>{p.name}</div>
-          <div style={{color:C.muted,fontSize:13,marginTop:3}}>{p.type} · {p.city}, {p.state}</div>
+          <div style={{fontFamily:"'DM Serif Display',serif",fontWeight:700,fontSize:20,color:C.navy,lineHeight:1.2}}>{p.name}</div>
+          <div style={{color:C.muted,fontSize:13,marginTop:3,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+            {p.type} · {p.city}, {p.state}
+            <TrustBadge providerSubmitted={p.providerSubmitted} verified={p.verified}/>
+          </div>
         </div>
       </div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:18}}>
@@ -149,7 +237,12 @@ function Modal({ p, onClose }) {
         {p.telehealth&&<span style={{background:"#e0f2fe",color:"#0369a1",borderRadius:20,padding:"2px 10px",fontSize:11,fontWeight:700}}>📱 Telehealth</span>}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:18}}>
-        {[["Rating",<><Stars r={p.rating}/> <strong>{p.rating}</strong> ({p.reviews})</>],["Phone",p.phone],["Address",`${p.address}, ${p.city}, ${p.state} ${p.zip}`],["Languages",p.languages.join(", ")]].map(([l,v])=>(
+        {[
+          ["Rating",<><Stars r={p.rating}/> <strong>{p.rating.toFixed(1)}</strong> ({p.reviews} {p.reviews===1?"review":"reviews"})</>],
+          ["Phone",p.phone],
+          ["Address",`${p.address}, ${p.city}, ${p.state} ${p.zip}`],
+          ["Languages",p.languages.join(", ")]
+        ].map(([l,v])=>(
           <div key={l} style={{background:C.bg,borderRadius:10,padding:"10px 13px"}}>
             <div style={{fontSize:10,color:C.subtle,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{l}</div>
             <div style={{fontSize:13,color:C.text,marginTop:3,fontWeight:500}}>{v}</div>
@@ -164,6 +257,9 @@ function Modal({ p, onClose }) {
         <div style={{fontSize:11,color:"#92400e",fontWeight:700,marginBottom:4}}>Community Notes</div>
         <div style={{fontSize:13,color:C.text,lineHeight:1.6}}>{p.notes}</div>
       </div>
+      {!p.verified && <div style={{background:C.bg,borderRadius:10,padding:"10px 13px",marginBottom:16,fontSize:12,color:C.muted}}>
+        ℹ️ This listing has not yet been independently verified. Always call ahead to confirm CHAMPVA is accepted before your appointment.
+      </div>}
       <div style={{display:"flex",gap:10}}>
         <a href={`tel:${p.phone}`} style={{flex:1,background:C.navy,color:"#fff",borderRadius:10,padding:"12px 0",textAlign:"center",textDecoration:"none",fontWeight:700,fontSize:13}}>📞 Call</a>
         <button style={{flex:1,background:C.gold,color:"#fff",border:"none",borderRadius:10,padding:"12px 0",fontWeight:700,fontSize:13,cursor:"pointer"}}>✍️ Leave Review</button>
@@ -207,7 +303,7 @@ function FindTab() {
       setUserLoc({lat:parseFloat(place.latitude),lng:parseFloat(place.longitude)});
       setLocLabel(`${place["place name"]}, ${place["state abbreviation"]}`);
       setSortBy("distance");
-    } catch { setLocError("ZIP not found. Please try again."); }
+    } catch { setLocError("ZIP not found. Try another or use location button."); }
     setLocLoading(false);
   };
 
@@ -277,7 +373,15 @@ function FindTab() {
       </div>
     </div>
 
-    {/* Legend */}
+    {/* Trust legend */}
+    <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:18,alignItems:"center"}}>
+      <span style={{fontSize:12,color:C.muted,fontWeight:600}}>Listing status:</span>
+      <span style={{fontSize:12,color:C.text,display:"flex",alignItems:"center",gap:4}}><span style={{background:"#dbeafe",color:"#1e40af",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>✓ Verified</span> independently confirmed</span>
+      <span style={{fontSize:12,color:C.text,display:"flex",alignItems:"center",gap:4}}><span style={{background:"#f3e8ff",color:"#6b21a8",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>Provider-Listed</span> submitted by office</span>
+      <span style={{fontSize:12,color:C.text,display:"flex",alignItems:"center",gap:4}}><span style={{background:C.yellowBg,color:"#92400e",borderRadius:20,padding:"1px 8px",fontSize:10,fontWeight:700}}>⚠ Unverified</span> call ahead</span>
+    </div>
+
+    {/* Experience Legend */}
     <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:18,alignItems:"center"}}>
       <span style={{fontSize:12,color:C.muted,fontWeight:600}}>CHAMPVA Experience:</span>
       {Object.entries(EXP).map(([l,c])=><span key={l} style={{display:"flex",alignItems:"center",gap:5,fontSize:12,color:C.text}}>
@@ -285,17 +389,26 @@ function FindTab() {
       </span>)}
     </div>
 
-    {/* Grid */}
     {filtered.length===0
       ? <div style={{textAlign:"center",padding:"60px 20px",color:C.muted}}>
           <div style={{fontSize:40,marginBottom:12}}>🔍</div>
           <div style={{fontFamily:"'DM Serif Display',serif",fontSize:20,color:C.text,marginBottom:8}}>No providers found</div>
-          <div style={{fontSize:14}}>Try adjusting your filters</div>
+          <div style={{fontSize:14}}>Try adjusting your filters — or be the first to add one in your area!</div>
         </div>
       : <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))",gap:14}}>
           {filtered.map(p=><ProviderCard key={p.id} p={p} dist={p.dist} onSelect={setSelected}/>)}
         </div>
     }
+
+    {/* CTA */}
+    <div style={{marginTop:36,background:C.navy,borderRadius:16,padding:"26px 28px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:16}}>
+      <div>
+        <div style={{fontFamily:"'DM Serif Display',serif",color:"#fff",fontSize:18,marginBottom:4}}>Know a CHAMPVA Provider?</div>
+        <div style={{color:"#94a3b8",fontSize:13}}>Every submission helps a veteran family get the care they've earned.</div>
+      </div>
+      <button style={{background:C.gold,color:"#fff",border:"none",borderRadius:10,padding:"11px 22px",fontWeight:700,fontSize:14,cursor:"pointer",whiteSpace:"nowrap"}}>➕ Add a Provider</button>
+    </div>
+
     <Modal p={selected} onClose={()=>setSelected(null)}/>
   </>;
 }
@@ -377,14 +490,11 @@ const CLAIM_STEPS = [
 function ClaimsTab() {
   const [step,setStep] = useState(0);
   const s = CLAIM_STEPS[step];
-
   return <div style={{maxWidth:820,margin:"0 auto"}}>
     <div style={{marginBottom:28}}>
       <div style={{fontFamily:"'DM Serif Display',serif",fontSize:28,color:C.navy,marginBottom:8}}>CHAMPVA Claims Walkthrough</div>
       <p style={{color:C.muted,fontSize:15,margin:0,lineHeight:1.7}}>Filing a CHAMPVA claim doesn't have to be intimidating. Follow these six steps to make sure your claim is complete, submitted correctly, and paid on time.</p>
     </div>
-
-    {/* Step Nav */}
     <div style={{display:"flex",gap:0,marginBottom:24,background:"#fff",border:`1.5px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
       {CLAIM_STEPS.map((cs,i)=><button key={i} onClick={()=>setStep(i)} style={{
         flex:1,padding:"12px 4px",border:"none",borderRight:i<CLAIM_STEPS.length-1?`1px solid ${C.border}`:"none",
@@ -395,8 +505,6 @@ function ClaimsTab() {
         <div>{i+1}</div>
       </button>)}
     </div>
-
-    {/* Step Content */}
     <div style={{background:"#fff",border:`1.5px solid ${C.border}`,borderRadius:16,padding:"28px 26px",marginBottom:20}}>
       <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:20}}>
         <div style={{width:52,height:52,background:C.navy,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{s.icon}</div>
@@ -406,7 +514,6 @@ function ClaimsTab() {
         </div>
       </div>
       <p style={{color:C.text,fontSize:15,lineHeight:1.7,marginBottom:20}}>{s.blurb}</p>
-
       {s.checklist&&<div style={{marginBottom:20}}>
         <div style={{fontWeight:700,color:C.navy,marginBottom:10,fontSize:14}}>Required Documents Checklist</div>
         {s.checklist.map((item,i)=><label key={i} style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:8,cursor:"pointer"}}>
@@ -414,7 +521,6 @@ function ClaimsTab() {
           <span style={{fontSize:13,color:C.text,lineHeight:1.5}}>{item}</span>
         </label>)}
       </div>}
-
       {s.details&&<div style={{marginBottom:20,display:"flex",flexDirection:"column",gap:10}}>
         {s.details.map(d=><div key={d.label} style={{background:C.bg,borderRadius:10,padding:"12px 14px",display:"flex",gap:14,alignItems:"flex-start"}}>
           <div style={{flexShrink:0,minWidth:140}}>
@@ -424,20 +530,17 @@ function ClaimsTab() {
           <div style={{fontSize:13,color:C.muted,lineHeight:1.5,paddingTop:2}}>{d.notes}</div>
         </div>)}
       </div>}
-
       {s.formFields&&<div style={{marginBottom:20}}>
         {s.formFields.map(f=><div key={f.field} style={{display:"flex",gap:14,borderBottom:`1px solid ${C.border}`,padding:"10px 0",alignItems:"flex-start"}}>
           <div style={{minWidth:130,fontSize:13,fontWeight:700,color:C.navy,flexShrink:0}}>{f.field}</div>
           <div style={{fontSize:13,color:C.text,lineHeight:1.5}}>{f.what}</div>
         </div>)}
       </div>}
-
       {s.tips&&<div style={{background:"#fffbeb",borderRadius:12,padding:"14px 16px",borderLeft:`3px solid ${C.gold}`}}>
         <div style={{fontSize:12,color:"#92400e",fontWeight:700,marginBottom:8}}>💡 Pro Tips</div>
         {s.tips.map((t,i)=><div key={i} style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:i<s.tips.length-1?6:0}}>• {t}</div>)}
       </div>}
     </div>
-
     <div style={{display:"flex",gap:10,justifyContent:"space-between"}}>
       <button onClick={()=>setStep(s=>Math.max(0,s-1))} disabled={step===0} style={{background:step===0?"#f3f4f6":C.bg,color:step===0?C.subtle:C.navy,border:`1.5px solid ${C.border}`,borderRadius:10,padding:"11px 20px",fontWeight:700,fontSize:14,cursor:step===0?"not-allowed":"pointer"}}>← Previous</button>
       {step<CLAIM_STEPS.length-1
@@ -477,9 +580,7 @@ function CostTab() {
 
   const actualBilled = procedure.label==="Custom amount" ? (parseFloat(customBilled)||0) : billed;
   const deductible   = coverage==="individual" ? INDIV_DEDUCTIBLE : FAMILY_DEDUCTIBLE;
-
   const deductRemaining = deductMet==="yes" ? 0 : deductMet==="partial" ? Math.max(0,deductible-deductPaid) : deductible;
-
   const billedAfterOHI = hasOHI ? Math.max(0,actualBilled-ohiPaid) : actualBilled;
   const allowable      = billedAfterOHI;
   const afterDeduct    = Math.max(0, allowable - deductRemaining);
@@ -498,34 +599,32 @@ function CostTab() {
     <div style={{fontSize:15,fontWeight:700,color:highlight==="green"?C.green:highlight==="red"?C.red:highlight==="gold"?C.gold:C.navy}}>{value}</div>
   </div>;
 
+  const inS = {width:"100%",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,boxSizing:"border-box"};
+
   return <div style={{maxWidth:820,margin:"0 auto"}}>
     <div style={{marginBottom:28}}>
       <div style={{fontFamily:"'DM Serif Display',serif",fontSize:28,color:C.navy,marginBottom:8}}>CHAMPVA Cost Estimator</div>
-      <p style={{color:C.muted,fontSize:15,margin:0,lineHeight:1.7}}>Estimate your out-of-pocket costs before your appointment. Figures are based on CHAMPVA's 75/25 cost-share model.</p>
+      <p style={{color:C.muted,fontSize:15,margin:0,lineHeight:1.7}}>Estimate your out-of-pocket costs before your appointment.</p>
     </div>
-
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
-      {/* Inputs */}
       <div style={{display:"flex",flexDirection:"column",gap:16}}>
         <Section title="Service Details">
           <div style={{marginBottom:12}}>
             <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Procedure Type</label>
             <select value={procedure.label} onChange={e=>{const p=PROCEDURE_EXAMPLES.find(x=>x.label===e.target.value);setProcedure(p);if(p.avg)setBilled(p.avg);}}
-              style={{width:"100%",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,appearance:"none",background:"#fff"}}>
+              style={{...inS,appearance:"none"}}>
               {PROCEDURE_EXAMPLES.map(p=><option key={p.label}>{p.label}</option>)}
             </select>
           </div>
           {procedure.label==="Custom amount"
             ? <div>
                 <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Billed Amount ($)</label>
-                <input type="number" value={customBilled} onChange={e=>setCustom(e.target.value)} placeholder="e.g. 1500"
-                  style={{width:"100%",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,boxSizing:"border-box"}}/>
+                <input type="number" value={customBilled} onChange={e=>setCustom(e.target.value)} placeholder="e.g. 1500" style={inS}/>
               </div>
             : <div style={{background:C.bg,borderRadius:8,padding:"10px 12px",fontSize:13,color:C.muted}}>
-                Using typical billed amount: <strong style={{color:C.navy}}>{fmt$(billed)}</strong>
+                Typical billed amount: <strong style={{color:C.navy}}>{fmt$(billed)}</strong>
               </div>}
         </Section>
-
         <Section title="Your Coverage">
           <div style={{marginBottom:12}}>
             <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Coverage Type</label>
@@ -536,7 +635,7 @@ function CostTab() {
             </div>
           </div>
           <div style={{marginBottom:12}}>
-            <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Annual Deductible ({fmt$(deductible)}) Status</label>
+            <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Deductible Status</label>
             <div style={{display:"flex",gap:8}}>
               {[["no","Not Met"],["partial","Partial"],["yes","Fully Met"]].map(([v,l])=>(
                 <button key={v} onClick={()=>setDeductMet(v)} style={{flex:1,padding:"9px 4px",borderRadius:8,border:`1.5px solid ${deductMet===v?C.navy:C.border}`,background:deductMet===v?C.navy:"#fff",color:deductMet===v?"#fff":C.text,fontSize:12,fontWeight:600,cursor:"pointer"}}>{l}</button>
@@ -544,64 +643,50 @@ function CostTab() {
             </div>
             {deductMet==="partial"&&<div style={{marginTop:8}}>
               <label style={{fontSize:11,color:C.muted,display:"block",marginBottom:4}}>Amount already paid toward deductible</label>
-              <input type="number" value={deductPaid} onChange={e=>setDeductPaid(Math.min(deductible,parseFloat(e.target.value)||0))} max={deductible}
-                style={{width:"100%",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"8px 10px",fontSize:13,boxSizing:"border-box"}}/>
+              <input type="number" value={deductPaid} onChange={e=>setDeductPaid(Math.min(deductible,parseFloat(e.target.value)||0))} max={deductible} style={inS}/>
             </div>}
           </div>
           <div>
             <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Out-of-Pocket This Year (toward $3,000 cap)</label>
-            <input type="number" value={capUsed} onChange={e=>setCapUsed(Math.min(CATASTROPHIC_CAP,parseFloat(e.target.value)||0))} max={3000}
-              style={{width:"100%",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,boxSizing:"border-box"}}/>
+            <input type="number" value={capUsed} onChange={e=>setCapUsed(Math.min(CATASTROPHIC_CAP,parseFloat(e.target.value)||0))} max={3000} style={inS}/>
           </div>
         </Section>
-
         <Section title="Other Health Insurance (OHI)">
           <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:hasOHI?12:0}}>
             <input type="checkbox" checked={hasOHI} onChange={e=>setHasOHI(e.target.checked)} style={{accentColor:C.navy}}/>
-            <span style={{fontSize:13,color:C.text}}>I have other health insurance (CHAMPVA pays secondary)</span>
+            <span style={{fontSize:13,color:C.text}}>I have other health insurance</span>
           </label>
           {hasOHI&&<div>
-            <label style={{fontSize:11,color:C.muted,display:"block",marginBottom:4}}>Amount your primary insurance will pay</label>
-            <input type="number" value={ohiPaid} onChange={e=>setOhiPaid(parseFloat(e.target.value)||0)}
-              style={{width:"100%",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,boxSizing:"border-box"}}/>
+            <label style={{fontSize:11,color:C.muted,display:"block",marginBottom:4}}>Amount your primary insurance pays</label>
+            <input type="number" value={ohiPaid} onChange={e=>setOhiPaid(parseFloat(e.target.value)||0)} style={inS}/>
           </div>}
         </Section>
       </div>
-
-      {/* Results */}
       <div>
         <Section title="Your Estimated Costs" style={{position:"sticky",top:16}}>
-          {/* Big number */}
           <div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navyLight} 100%)`,borderRadius:14,padding:"22px 20px",marginBottom:20,textAlign:"center"}}>
             <div style={{fontSize:12,color:"rgba(255,255,255,.6)",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Your Estimated Out-of-Pocket</div>
             <div style={{fontFamily:"'DM Serif Display',serif",fontSize:44,color:"#fff",lineHeight:1}}>{fmt$(Math.max(0,totalYouPay))}</div>
-            {capUsed+yourShare>=CATASTROPHIC_CAP&&<div style={{marginTop:8,fontSize:12,color:C.goldLight,fontWeight:600}}>🎉 You've reached the $3,000 catastrophic cap — CHAMPVA covers 100% after this!</div>}
           </div>
-
           <Row label="Provider's Billed Amount" value={fmt$(actualBilled)}/>
-          {hasOHI&&<Row label="Primary Insurance Pays" value={`−${fmt$(ohiPaid)}`} sub="CHAMPVA calculates on remainder" highlight="green"/>}
+          {hasOHI&&<Row label="Primary Insurance Pays" value={`−${fmt$(ohiPaid)}`} highlight="green"/>}
           <Row label="CHAMPVA Allowable" value={fmt$(allowable)} sub="Maximum CHAMPVA will consider"/>
-          {deductApplied>0&&<Row label="Deductible Applied" value={`−${fmt$(deductApplied)}`} sub={`${deductMet==="partial"?`$${deductPaid} already met, `:""}`+`$${deductRemaining.toFixed(2)} remaining`} highlight="red"/>}
-          <Row label="CHAMPVA Pays (75%)" value={fmt$(champvaPays)} sub="Sent directly to provider" highlight="green"/>
+          {deductApplied>0&&<Row label="Deductible Applied" value={`−${fmt$(deductApplied)}`} highlight="red"/>}
+          <Row label="CHAMPVA Pays (75%)" value={fmt$(champvaPays)} highlight="green"/>
           <Row label="Your Cost-Share (25%)" value={fmt$(yourShare)} highlight="red"/>
-          {deductApplied>0&&<Row label="+ Deductible Portion" value={fmt$(deductApplied)} highlight="red"/>}
           <Row label="Total You Owe Provider" value={fmt$(Math.max(0,totalYouPay))} highlight="red"/>
-
           <div style={{background:C.bg,borderRadius:12,padding:"14px 14px",marginTop:16}}>
-            <div style={{fontSize:12,fontWeight:700,color:C.navy,marginBottom:8}}>📊 Annual Catastrophic Cap Progress</div>
+            <div style={{fontSize:12,fontWeight:700,color:C.navy,marginBottom:8}}>📊 Annual Cap Progress</div>
             <div style={{background:C.border,borderRadius:100,height:8,marginBottom:6}}>
               <div style={{background:capAfter>=CATASTROPHIC_CAP?C.green:C.gold,height:8,borderRadius:100,width:`${Math.min(100,(capAfter/CATASTROPHIC_CAP)*100)}%`,transition:"width .4s"}}/>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.muted}}>
-              <span>{fmt$(capAfter)} used</span>
-              <span>{fmt$(capRemaining)} remaining</span>
+              <span>{fmt$(capAfter)} used</span><span>{fmt$(capRemaining)} remaining of $3,000 cap</span>
             </div>
-            {capRemaining<=0&&<div style={{marginTop:8,fontSize:12,color:C.green,fontWeight:700}}>✓ CHAMPVA now covers 100% of allowable costs for the rest of the year</div>}
           </div>
-
           <div style={{background:"#fffbeb",borderRadius:12,padding:"12px 14px",marginTop:12,borderLeft:`3px solid ${C.gold}`}}>
             <div style={{fontSize:11,color:"#92400e",fontWeight:700,marginBottom:4}}>⚠️ Disclaimer</div>
-            <div style={{fontSize:11,color:C.text,lineHeight:1.5}}>This is an estimate only. Actual CHAMPVA payments depend on the provider's specific charges, CHAMPVA's approved allowable amount, and current benefit year status. Always confirm with CHAMPVA at 1-800-733-8387.</div>
+            <div style={{fontSize:11,color:C.text,lineHeight:1.5}}>This is an estimate only. Actual payments depend on CHAMPVA's approved allowable amount. Confirm with CHAMPVA at 1-800-733-8387.</div>
           </div>
         </Section>
       </div>
@@ -639,24 +724,9 @@ function AITab() {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",
+          model:"claude-sonnet-4-6",
           max_tokens:1000,
-          system:`You are a knowledgeable and compassionate CHAMPVA benefits advisor helping veteran families understand and use their CHAMPVA health coverage. 
-
-CHAMPVA (Civilian Health and Medical Program of the Department of Veterans Affairs) covers eligible dependents and survivors of certain veterans.
-
-Key facts to know:
-- Annual deductible: $50/individual or $100/family per calendar year
-- Cost share: CHAMPVA pays 75%, beneficiary pays 25% of allowable amount
-- Catastrophic cap: $3,000/family per year (after which CHAMPVA pays 100%)
-- Payer ID for providers: 84146
-- Claims phone: 1-800-733-8387 (Mon-Fri 8:05am-7:30pm ET)
-- Mail claims to: VA Health Administration Center, PO Box 469064, Denver CO 80246-9064
-- Most claims use VA Form 10-7959a; pharmacy uses 10-7959c
-- CHAMPVA is secondary to Medicare and most private insurance
-- Claims must be filed within 1 year of date of service
-
-Be warm, clear, and specific. Avoid jargon. If you're unsure about something, tell them to call CHAMPVA directly. Keep answers concise but complete. Always remind them that official guidance comes from va.gov or the CHAMPVA helpline.`,
+          system:`You are a knowledgeable and compassionate CHAMPVA benefits advisor helping veteran families understand and use their CHAMPVA health coverage. CHAMPVA (Civilian Health and Medical Program of the Department of Veterans Affairs) covers eligible dependents and survivors of certain veterans. Key facts: Annual deductible $50/individual or $100/family. CHAMPVA pays 75%, beneficiary pays 25%. Catastrophic cap $3,000/family per year. Payer ID: 84146. Claims phone: 1-800-733-8387 Mon-Fri 8:05am-7:30pm ET. Mail claims to VA Health Administration Center PO Box 469064 Denver CO 80246-9064. Claims use VA Form 10-7959a; pharmacy uses 10-7959c. CHAMPVA is secondary to Medicare and most private insurance. Claims must be filed within 1 year of date of service. Be warm, clear, and specific. Avoid jargon. Always remind them official guidance comes from va.gov or the CHAMPVA helpline.`,
           messages:history.map(m=>({role:m.role,content:m.content}))
         })
       });
@@ -674,15 +744,12 @@ Be warm, clear, and specific. Avoid jargon. If you're unsure about something, te
       <div style={{fontFamily:"'DM Serif Display',serif",fontSize:28,color:C.navy,marginBottom:8}}>CHAMPVA Benefits Assistant</div>
       <p style={{color:C.muted,fontSize:15,margin:0,lineHeight:1.7}}>Ask anything about your CHAMPVA coverage — eligibility, claims, what's covered, or how to use your benefits.</p>
     </div>
-
     {messages.length===0&&<div style={{marginBottom:20}}>
       <div style={{fontSize:12,color:C.muted,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Suggested Questions</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-        {SUGGESTED_QUESTIONS.map(q=><button key={q} onClick={()=>send(q)} style={{background:"#fff",border:`1.5px solid ${C.border}`,borderRadius:20,padding:"7px 14px",fontSize:13,color:C.navy,cursor:"pointer",fontWeight:500,transition:"border-color .15s"}}
-          onMouseEnter={e=>e.currentTarget.style.borderColor=C.gold} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>{q}</button>)}
+        {SUGGESTED_QUESTIONS.map(q=><button key={q} onClick={()=>send(q)} style={{background:"#fff",border:`1.5px solid ${C.border}`,borderRadius:20,padding:"7px 14px",fontSize:13,color:C.navy,cursor:"pointer",fontWeight:500}}>{q}</button>)}
       </div>
     </div>}
-
     <div style={{background:"#fff",border:`1.5px solid ${C.border}`,borderRadius:16,overflow:"hidden"}}>
       <div style={{padding:"16px 18px",minHeight:300,maxHeight:420,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
         {messages.length===0&&<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",color:C.subtle,padding:24}}>
@@ -720,70 +787,155 @@ Be warm, clear, and specific. Avoid jargon. If you're unsure about something, te
   </div>;
 }
 
-// ─── Submit Tab ───────────────────────────────────────────────────────────────
+// ─── Submit Tab (with required fields + validation) ───────────────────────────
 function SubmitTab() {
   const [submitted,setSubmitted] = useState(false);
+  const [errors,setErrors]       = useState({});
+  const [form,setForm]           = useState({
+    name:"", address:"", city:"", state:"", zip:"", phone:"",
+    type:"", experience:"", notes:"",
+    acceptingNew:false, telehealth:false, multilingual:false,
+    rating:0, submitterName:"", submitterEmail:""
+  });
+  const [hoveredStar,setHoveredStar] = useState(0);
+
+  const set = (k,v) => { setForm(f=>({...f,[k]:v})); setErrors(e=>({...e,[k]:""})); };
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim())           e.name           = "Provider name is required";
+    if (!form.address.trim())        e.address        = "Address is required";
+    if (!form.city.trim())           e.city           = "City is required";
+    if (!form.state)                 e.state          = "State is required";
+    if (!form.zip.trim())            e.zip            = "ZIP code is required";
+    if (!form.phone.trim())          e.phone          = "Phone number is required";
+    if (!form.type)                  e.type           = "Provider type is required";
+    if (!form.experience)            e.experience     = "Please select a CHAMPVA experience level";
+    if (!form.rating)                e.rating         = "Please provide a star rating";
+    if (!form.submitterName.trim())  e.submitterName  = "Your name is required";
+    if (!form.submitterEmail.trim()) e.submitterEmail = "Your email is required";
+    else if (!/\S+@\S+\.\S+/.test(form.submitterEmail)) e.submitterEmail = "Please enter a valid email";
+    return e;
+  };
+
+  const handleSubmit = () => {
+    const e = validate();
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
+    setSubmitted(true);
+  };
+
   if(submitted) return <div style={{maxWidth:560,margin:"60px auto",textAlign:"center"}}>
     <div style={{fontSize:48,marginBottom:16}}>🎖️</div>
     <div style={{fontFamily:"'DM Serif Display',serif",fontSize:26,color:C.navy,marginBottom:8}}>Thank You for Contributing</div>
-    <p style={{color:C.muted,fontSize:15,lineHeight:1.7}}>Your submission helps other veteran families find providers they can trust. We'll review your submission before it goes live.</p>
-    <button onClick={()=>setSubmitted(false)} style={{marginTop:20,background:C.navy,color:"#fff",border:"none",borderRadius:10,padding:"12px 24px",fontWeight:700,fontSize:14,cursor:"pointer"}}>Submit Another</button>
+    <p style={{color:C.muted,fontSize:15,lineHeight:1.7}}>Your submission helps other veteran families find providers they can trust. We'll review it before it goes live.</p>
+    <button onClick={()=>{setSubmitted(false);setForm({name:"",address:"",city:"",state:"",zip:"",phone:"",type:"",experience:"",notes:"",acceptingNew:false,telehealth:false,multilingual:false,rating:0,submitterName:"",submitterEmail:""});setErrors({});}} style={{marginTop:20,background:C.navy,color:"#fff",border:"none",borderRadius:10,padding:"12px 24px",fontWeight:700,fontSize:14,cursor:"pointer"}}>Submit Another</button>
   </div>;
 
-  const inStyle = {width:"100%",border:`1.5px solid ${C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,boxSizing:"border-box",outline:"none"};
+  const inStyle = k => ({width:"100%",border:`1.5px solid ${errors[k]?C.red:C.border}`,borderRadius:8,padding:"9px 12px",fontSize:13,boxSizing:"border-box",outline:"none"});
+  const Err = ({k}) => errors[k] ? <div style={{color:C.red,fontSize:11,marginTop:3}}>⚠ {errors[k]}</div> : null;
+  const Req = () => <span style={{color:C.red,marginLeft:2}}>*</span>;
+
   return <div style={{maxWidth:640,margin:"0 auto"}}>
     <div style={{fontFamily:"'DM Serif Display',serif",fontSize:28,color:C.navy,marginBottom:8}}>Add a Provider</div>
-    <p style={{color:C.muted,fontSize:15,marginBottom:28}}>Help veteran families by adding providers with real CHAMPVA experience.</p>
+    <p style={{color:C.muted,fontSize:15,marginBottom:6}}>Help veteran families by sharing a provider you've used with CHAMPVA.</p>
+    <p style={{color:C.muted,fontSize:13,marginBottom:28}}>Fields marked <span style={{color:C.red}}>*</span> are required. Your contact info is never displayed publicly.</p>
     <Section>
-      <div style={{display:"flex",flexDirection:"column",gap:14}}>
-        {[["Practice / Provider Name","e.g. Riverside Family Medicine"],["Address","Street address"],["City","City"],["Phone","(555) 000-0000"]].map(([l,p])=>(
-          <div key={l}>
-            <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>{l}</label>
-            <input placeholder={p} style={inStyle}/>
+      <div style={{display:"flex",flexDirection:"column",gap:16}}>
+
+        {/* Provider info */}
+        {[
+          ["name","Practice / Provider Name","e.g. Riverside Family Medicine"],
+          ["address","Street Address","123 Main St"],
+          ["city","City","City"],
+          ["phone","Phone Number","(555) 000-0000"],
+          ["zip","ZIP Code","00000"],
+        ].map(([k,l,p])=>(
+          <div key={k}>
+            <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>{l}<Req/></label>
+            <input value={form[k]} onChange={e=>set(k,e.target.value)} placeholder={p} style={inStyle(k)}/>
+            <Err k={k}/>
           </div>
         ))}
+
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>State</label>
-            <select style={{...inStyle,appearance:"none"}}>
-              <option value="">Select</option>
-              {["AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","HI","IA","ID","IL","IN","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY"].map(s=><option key={s}>{s}</option>)}
+            <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>State<Req/></label>
+            <select value={form.state} onChange={e=>set("state",e.target.value)} style={{...inStyle("state"),appearance:"none"}}>
+              <option value="">Select state</option>
+              {ALL_STATES.map(s=><option key={s}>{s}</option>)}
             </select>
+            <Err k="state"/>
           </div>
           <div>
-            <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Provider Type</label>
-            <select style={{...inStyle,appearance:"none"}}>
-              <option value="">Select</option>{TYPES.map(t=><option key={t}>{t}</option>)}
+            <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Provider Type<Req/></label>
+            <select value={form.type} onChange={e=>set("type",e.target.value)} style={{...inStyle("type"),appearance:"none"}}>
+              <option value="">Select type</option>
+              {ALL_TYPES.map(t=><option key={t}>{t}</option>)}
             </select>
+            <Err k="type"/>
           </div>
         </div>
+
+        {/* Experience */}
         <div>
-          <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>CHAMPVA Experience Level</label>
+          <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>CHAMPVA Experience Level<Req/></label>
           <div style={{display:"flex",gap:8}}>
-            {Object.entries(EXP).map(([l,c])=><label key={l} style={{flex:1,background:c.bg,color:c.text,borderRadius:10,padding:"10px 8px",textAlign:"center",cursor:"pointer",fontSize:12,fontWeight:700}}>
-              <input type="radio" name="exp" style={{display:"none"}}/><div style={{width:10,height:10,borderRadius:"50%",background:c.dot,margin:"0 auto 4px"}}/>{l}
-            </label>)}
+            {Object.entries(EXP).map(([l,c])=><button key={l} onClick={()=>set("experience",l)} style={{flex:1,background:form.experience===l?c.bg:"#fff",color:form.experience===l?c.text:C.muted,border:`1.5px solid ${form.experience===l?c.dot:C.border}`,borderRadius:10,padding:"10px 8px",textAlign:"center",cursor:"pointer",fontSize:12,fontWeight:700,transition:"all .15s"}}>
+              <div style={{width:10,height:10,borderRadius:"50%",background:c.dot,margin:"0 auto 4px"}}/>{l}
+            </button>)}
           </div>
+          <Err k="experience"/>
         </div>
+
+        {/* Notes */}
         <div>
-          <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Your CHAMPVA Experience Here</label>
-          <textarea placeholder="What should other veteran families know about using CHAMPVA at this provider? (billing ease, staff knowledge, wait times, etc.)" rows={4} style={{...inStyle,resize:"vertical",lineHeight:1.6}}/>
+          <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Your Experience (Community Notes)</label>
+          <textarea value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="What should other veteran families know? Billing ease, staff knowledge, wait times, etc." rows={4} style={{...inStyle("notes"),resize:"vertical",lineHeight:1.6}}/>
         </div>
+
+        {/* Checkboxes */}
         <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
-          {[["Accepting new CHAMPVA patients"],["Telehealth available"],["Multilingual staff"]].map(([l])=>(
-            <label key={l} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:13,color:C.text}}>
-              <input type="checkbox" style={{accentColor:C.navy}}/>{l}
+          {[["acceptingNew","Accepting new CHAMPVA patients"],["telehealth","Telehealth available"],["multilingual","Multilingual staff"]].map(([k,l])=>(
+            <label key={k} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:13,color:C.text}}>
+              <input type="checkbox" checked={form[k]} onChange={e=>set(k,e.target.checked)} style={{accentColor:C.navy}}/>{l}
             </label>
           ))}
         </div>
+
+        {/* Star Rating */}
         <div>
-          <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Your Rating</label>
-          <div style={{display:"flex",gap:8}}>
-            {[1,2,3,4,5].map(n=><button key={n} style={{width:40,height:40,borderRadius:8,border:`1.5px solid ${C.border}`,background:"#fff",cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>{"★"}</button>)}
+          <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>Your Rating<Req/></label>
+          <div style={{display:"flex",gap:4}}>
+            {[1,2,3,4,5].map(n=><button key={n} onMouseEnter={()=>setHoveredStar(n)} onMouseLeave={()=>setHoveredStar(0)} onClick={()=>set("rating",n)}
+              style={{width:40,height:40,borderRadius:8,border:`1.5px solid ${C.border}`,background:"#fff",cursor:"pointer",fontSize:22,display:"flex",alignItems:"center",justifyContent:"center",color:n<=(hoveredStar||form.rating)?C.gold:"#d1d5db",transition:"color .1s"}}>★</button>)}
+            {form.rating>0&&<span style={{alignSelf:"center",fontSize:13,color:C.muted,marginLeft:6}}>{["","Poor","Fair","Good","Very Good","Excellent"][form.rating]}</span>}
+          </div>
+          <Err k="rating"/>
+        </div>
+
+        {/* Divider */}
+        <div style={{borderTop:`1px solid ${C.border}`,paddingTop:16}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.navy,marginBottom:12}}>About You (not displayed publicly)</div>
+          {[["submitterName","Your Name","First and last name"],["submitterEmail","Your Email","email@example.com"]].map(([k,l,p])=>(
+            <div key={k} style={{marginBottom:12}}>
+              <label style={{fontSize:12,fontWeight:700,color:C.muted,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>{l}<Req/></label>
+              <input value={form[k]} onChange={e=>set(k,e.target.value)} placeholder={p} type={k==="submitterEmail"?"email":"text"} style={inStyle(k)}/>
+              <Err k={k}/>
+            </div>
+          ))}
+          <div style={{background:C.bg,borderRadius:8,padding:"10px 12px",fontSize:12,color:C.muted,lineHeight:1.5}}>
+            🔒 Your name and email are used for follow-up verification only and will never appear on the site.
           </div>
         </div>
-        <button onClick={()=>setSubmitted(true)} style={{background:C.navy,color:"#fff",border:"none",borderRadius:10,padding:"13px 0",fontWeight:700,fontSize:15,cursor:"pointer"}}>Submit Provider →</button>
-        <p style={{fontSize:12,color:C.subtle,textAlign:"center",margin:0}}>Submissions are reviewed before going live. Thank you for helping the veteran community.</p>
+
+        {Object.keys(errors).length>0&&<div style={{background:C.redBg,borderRadius:10,padding:"12px 14px",fontSize:13,color:C.red,fontWeight:600}}>
+          Please fix the errors above before submitting.
+        </div>}
+
+        <button onClick={handleSubmit} style={{background:C.navy,color:"#fff",border:"none",borderRadius:10,padding:"13px 0",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+          Submit Provider →
+        </button>
+        <p style={{fontSize:12,color:C.subtle,textAlign:"center",margin:0}}>All submissions are reviewed before going live. Thank you for helping the veteran community.</p>
       </div>
     </Section>
   </div>;
@@ -800,11 +952,8 @@ const TABS = [
 
 export default function App() {
   const [tab,setTab] = useState("find");
-
   return <div style={{fontFamily:"'Source Sans 3',sans-serif",background:C.bg,minHeight:"100vh"}}>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-
-    {/* Header */}
     <div style={{background:C.navy,borderBottom:"3px solid #C9952A"}}>
       <div style={{maxWidth:1160,margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between",height:60}}>
         <div style={{display:"flex",alignItems:"center",gap:11}}>
@@ -814,17 +963,14 @@ export default function App() {
             <div style={{color:"rgba(255,255,255,.45)",fontSize:10,letterSpacing:.5}}>Provider Directory for Veterans & Families</div>
           </div>
         </div>
-        <div style={{display:"flex",gap:4}}>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
           {TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{
-            background:tab===t.id?"#C9952A":"rgba(255,255,255,.07)",
-            color:"#fff",border:"none",borderRadius:8,padding:"7px 13px",
-            fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"background .15s"
-          }}><span>{t.icon}</span><span style={{display:"none",["@media (min-width:640px)"]:{display:"inline"}}}>{t.label}</span><span style={{fontSize:11}}>{t.label}</span></button>)}
+            background:tab===t.id?"#C9952A":"rgba(255,255,255,.07)",color:"#fff",border:"none",borderRadius:8,
+            padding:"7px 11px",fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:4,transition:"background .15s"
+          }}><span>{t.icon}</span><span>{t.label}</span></button>)}
         </div>
       </div>
     </div>
-
-    {/* Hero (only on find tab) */}
     {tab==="find"&&<div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navyLight} 100%)`,padding:"40px 24px 32px"}}>
       <div style={{maxWidth:1160,margin:"0 auto",textAlign:"center"}}>
         <div style={{display:"inline-block",background:C.gold,color:"#fff",borderRadius:20,padding:"3px 14px",fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",marginBottom:14}}>Free · Community-Powered · Veteran Focused</div>
@@ -832,12 +978,10 @@ export default function App() {
           Find CHAMPVA Providers<br/><span style={{color:C.goldLight}}>Who Actually Know How to Use It</span>
         </h1>
         <p style={{color:"rgba(255,255,255,.6)",fontSize:15,margin:0,lineHeight:1.7,maxWidth:560,marginLeft:"auto",marginRight:"auto"}}>
-          Real ratings, real notes from veteran families. Search by ZIP, filter by specialty, and find providers with verified CHAMPVA billing experience.
+          Real providers submitted by real veteran families. Search by ZIP, filter by specialty, and find offices with verified CHAMPVA billing experience.
         </p>
       </div>
     </div>}
-
-    {/* Page labels for non-find tabs */}
     {tab!=="find"&&<div style={{background:`linear-gradient(135deg,${C.navy} 0%,${C.navyLight} 100%)`,padding:"28px 24px 22px"}}>
       <div style={{maxWidth:1160,margin:"0 auto"}}>
         <div style={{fontFamily:"'DM Serif Display',serif",color:"#fff",fontSize:22}}>
@@ -845,8 +989,6 @@ export default function App() {
         </div>
       </div>
     </div>}
-
-    {/* Content */}
     <div style={{maxWidth:1160,margin:"0 auto",padding:"28px 24px 60px"}}>
       {tab==="find"  &&<FindTab/>}
       {tab==="claims"&&<ClaimsTab/>}
@@ -854,8 +996,6 @@ export default function App() {
       {tab==="ai"    &&<AITab/>}
       {tab==="submit"&&<SubmitTab/>}
     </div>
-
-    {/* Footer */}
     <div style={{background:C.navy,padding:"24px",textAlign:"center"}}>
       <div style={{fontFamily:"'DM Serif Display',serif",color:C.gold,fontSize:15,marginBottom:6}}>CHAMPVA Finder</div>
       <div style={{color:"#475569",fontSize:12,lineHeight:1.8}}>
